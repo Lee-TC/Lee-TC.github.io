@@ -1130,7 +1130,7 @@ txrecipet <span class="token operator">=</span> w3<span class="token punctuation
 
 <p>首先，我们创建了两个NFT合约。刚开始的时候我是直接使用openzeppelin的库函数，后来发现合约大小超过了24KB于是只能一点点复制了。</p>
 <p>其次，这里使用fonudry的vm功能对消息进行签名，但是在真实环境中没有这个功能，所以我们可以选择使用foundry在本地签名，将<code>(v, r, s)</code>作为参数传入。</p>
-<p><img src="/2.png"></p>
+<p><img src="/../img/nitai.png"></p>
 <h2 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h2><p>本题看起来非常长，逻辑难以理解，实际在读懂合约代码后，可以很清晰地将问题分为三个部分逐个击破。在合约逻辑中，<strong>未经检查的传入地址会给合约带来很大的风险</strong>，这一点在real world的hack事件中也是非常常见的。</p>
 <p>这题没在比赛过程中做出来还是非常可惜的，还是思维不够灵活，希望以后可以多做题多积累积累经验。</p>
 
